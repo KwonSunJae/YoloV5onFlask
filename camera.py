@@ -9,9 +9,9 @@ import argparse
 from utils.datasets import *
 from utils.utils import *
 import time
+from datetime import datetime
 
 class Camera(BaseCamera):
-    video_source = '4.mp4'
 
     def __init__(self):
         if os.environ.get('OPENCV_CAMERA_SOURCE'):
@@ -25,8 +25,9 @@ class Camera(BaseCamera):
     @staticmethod
     def frames():
         out, weights, imgsz = \
-        'inference/output', './weights/best.pt', 640
-        source = './4.mp4'
+        'inference/output', './weights/crowdhuman_yolov5m.pt', 640
+        source = 'http://192.168.0.8:8081/video'
+        print(source)
         device = torch_utils.select_device()
         if os.path.exists(out):
             shutil.rmtree(out)  # delete output folder
@@ -53,9 +54,16 @@ class Camera(BaseCamera):
             model.half()
 
         # Set Dataloader
-        vid_path, vid_writer = None, None
-        dataset = LoadImages(source, img_size=imgsz)
-        #dataset = LoadStreams(source, img_size=imgsz)
+        fps, w, h = 15, 1920, 1080
+        start = int(datetime.now().timestamp())
+        save_path = str(start)+".mp4"
+
+
+        vid_writer =  cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), 15, (w, h))
+
+
+        #dataset = LoadImages(source, img_size=imgsz)
+        dataset = LoadStreams(source, img_size=imgsz)
         names = model.names if hasattr(model, 'names') else model.modules.names
         
         colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(names))]
@@ -76,7 +84,7 @@ class Camera(BaseCamera):
             pred = model(img, augment=False)[0]
             
             # Apply NMS
-            pred = non_max_suppression(pred, 0.6, 0.7,
+            pred = non_max_suppression(pred, 0.8, 0.8,
                                fast=True, classes=None, agnostic=False)
             t2 = torch_utils.time_synchronized()
 
@@ -87,12 +95,12 @@ class Camera(BaseCamera):
             for i, det in enumerate(pred):  # detections per image
                 p, s, im0 = path, '', im0s
 
-                save_path = str(Path(out) / Path(p).name)
+                #save_path = str(Path(out) / Path(p).name)
                 s += '%gx%g ' % img.shape[2:]  # print string
-                gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  #  normalization gain whwh
+                gn = torch.tensor(im0[0].shape)[[1, 0, 1, 0]]  #  normalization gain whwh
                 if det is not None and len(det):
                     # Rescale boxes from img_size to im0 size
-                    det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
+                    det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0[0].shape).round()
                     
                     #for c in det[:, -1].unique():  #probably error with torch 1.5
                     for c in det[:, -1].detach().unique():
@@ -101,16 +109,22 @@ class Camera(BaseCamera):
                     
                    
                     for *xyxy, conf, cls in det:
-                        print(xyxy)
-                        print( float(conf))
-                        print(int(cls))
                         label = '%s %.2f' % (names[int(cls)], float(conf))
-                        print(label)
-                        plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=3)
+                        plot_one_box(xyxy, im0[0], label=label, color=colors[int(cls)], line_thickness=3)
+                        
                 print('%sDone. (%.3fs)' % (s, t2 - t1))
-                time.sleep(0.02)
- 
-            yield cv2.imencode('.jpg', im0)[1].tobytes()
+                time.sleep(0.1)
+            if int(datetime.now().timestamp()) - start >= 25:
+                vid_writer.release()
+                start = int(datetime.now().timestamp())
+                save_path = str(start)+".mp4"
+                vid_writer =  cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), 15, (w, h))
+            else:
+                
+                vid_writer.write(im0s[0])
+                k = cv2.waitKey(1) & 0xff
+
+            yield cv2.imencode('.jpg', im0[0])[1].tobytes()
 
     
             

@@ -1,0 +1,8 @@
+opencv-python
+torch
+torchvision
+tqdm
+IPython
+pandas
+PyYAML
+seaborn

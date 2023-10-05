@@ -490,7 +490,7 @@ def add_tflite_metadata(file, metadata, num_outputs):
 @smart_inference_mode()
 def run(
         data=ROOT / 'data/BirdandPlane.yaml',  # 'dataset.yaml path'
-        weights=ROOT / 'yolov5s.pt',  # weights path
+        weights=ROOT / 'crowdhuman_yolov5m.pt',  # weights path
         imgsz=(640, 640),  # image (height, width)
         batch_size=1,  # batch size
         device='cpu',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
