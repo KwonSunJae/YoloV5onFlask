@@ -1,5 +1,6 @@
 import time
 import threading
+from functools import partial
 try:
     from greenlet import getcurrent as get_ident
 except ImportError:
@@ -56,14 +57,14 @@ class BaseCamera(object):
     frame = None  # current frame is stored here by background thread
     last_access = 0  # time of last client access to the camera
     event = CameraEvent()
-
-    def __init__(self):
+    
+    def __init__(self,video_sources):
         """Start the background camera thread if it isn't running yet."""
         if BaseCamera.thread is None:
             BaseCamera.last_access = time.time()
-
+            
             # start background frame thread
-            BaseCamera.thread = threading.Thread(target=self._thread)
+            BaseCamera.thread = threading.Thread(target=partial(self._thread,video_sources))
             BaseCamera.thread.start()
 
             # wait until frames are available
@@ -86,10 +87,10 @@ class BaseCamera(object):
         raise RuntimeError('Must be implemented by subclasses.')
 
     @classmethod
-    def _thread(cls):
+    def _thread(cls,video_source):
         """Camera background thread."""
         print('Starting camera thread.')
-        frames_iterator = cls.frames()
+        frames_iterator = cls.frames(video_source)
         for frame in frames_iterator:
             BaseCamera.frame = frame
             BaseCamera.event.set()  # send signal to clients

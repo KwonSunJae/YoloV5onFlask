@@ -29,10 +29,10 @@ def gen(camera):
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 
-@app.route('/video_feed')
-def video_feed():
+@app.route('/video_feed/<video>')
+def video_feed(video):
     """Video streaming route. Put this in the src attribute of an img tag."""
-    return Response(gen(Camera()),
+    return Response(gen(Camera(video+".mp4")),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
