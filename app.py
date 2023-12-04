@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from importlib import import_module
 import os
-from flask import Flask, render_template, Response
+from flask import Flask, render_template, send_file,Response
 
 # import camera driver
 if os.environ.get('CAMERA'):
@@ -28,6 +28,9 @@ def gen(camera):
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
+@app.route('/emergency')
+def emergency_route():
+    return send_file('emer.png', mimetype='image/png')
 
 @app.route('/video_feed/<video>')
 def video_feed(video):
