@@ -109,7 +109,7 @@ class Camera(BaseCamera):
                         plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=3)
                         
                 print('%sDone. (%.3fs)' % (s, t2 - t1))
-                time.sleep(0.05)
+                time.sleep(0.02)
             
 
             yield cv2.imencode('.jpg', im0)[1].tobytes()
